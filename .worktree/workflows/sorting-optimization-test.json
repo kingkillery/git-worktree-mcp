@@ -1,0 +1,27 @@
+{
+  "workflowName": "sorting-optimization-test",
+  "createdAt": "2025-11-18T08:47:28.664Z",
+  "iterations": [
+    {
+      "featureName": "sorting-optimization-test-quick-sort",
+      "label": "quick-sort",
+      "branch": "feature/sorting-optimization-test-quick-sort",
+      "path": "C:\\Users\\prest\\Desktop\\Desktop_Projects\\May-Dec-2025\\MCP-Servers\\git-worktree\\git-worktree-mcp\\.worktree\\sorting-optimization-test-quick-sort",
+      "success": true
+    },
+    {
+      "featureName": "sorting-optimization-test-merge-sort",
+      "label": "merge-sort",
+      "branch": "feature/sorting-optimization-test-merge-sort",
+      "path": "C:\\Users\\prest\\Desktop\\Desktop_Projects\\May-Dec-2025\\MCP-Servers\\git-worktree\\git-worktree-mcp\\.worktree\\sorting-optimization-test-merge-sort",
+      "success": true
+    },
+    {
+      "featureName": "sorting-optimization-test-hybrid-sort",
+      "label": "hybrid-sort",
+      "branch": "feature/sorting-optimization-test-hybrid-sort",
+      "path": "C:\\Users\\prest\\Desktop\\Desktop_Projects\\May-Dec-2025\\MCP-Servers\\git-worktree\\git-worktree-mcp\\.worktree\\sorting-optimization-test-hybrid-sort",
+      "success": true
+    }
+  ]
+}

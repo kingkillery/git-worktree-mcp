@@ -1,4 +1,14 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(but.exe:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(npx ts-node:*)",
+      "mcp__git-worktree__list_worktrees"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "git-worktree",
@@ -8,10 +18,5 @@
     "youtube-data",
     "reddit",
     "gitbutler"
-  ],
-  "permissions": {
-    "allow": [
-      "Bash(but.exe:*)"
-    ]
-  }
+  ]
 }
