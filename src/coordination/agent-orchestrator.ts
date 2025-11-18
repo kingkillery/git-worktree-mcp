@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { MCPServerDiscovery, MCPServerInfo, TaskRequirement } from '../mcp-integration/discovery'
+import { MCPServerDiscovery, MCPServerInfo, TaskRequirement } from '../mcp-integration/discovery.js'
 
 export interface Approach {
   id: string

@@ -5,7 +5,7 @@
  * with MCP server integration and real-time progress tracking.
  */
 import { EventEmitter } from 'events';
-import { MCPServerDiscovery } from '../mcp-integration/discovery';
+import { MCPServerDiscovery } from '../mcp-integration/discovery.js';
 /**
  * Orchestrates multiple agents working on parallel approaches
  */

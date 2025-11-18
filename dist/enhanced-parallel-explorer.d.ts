@@ -5,7 +5,7 @@
  * parallel exploration experience with MCP server integration.
  */
 import { EventEmitter } from 'events';
-import { WorkflowResult } from './workflow/workflow-orchestrator';
+import { WorkflowResult } from './workflow/workflow-orchestrator.js';
 export interface ParallelExplorationOptions {
     autoCleanup?: boolean;
     preserveArtifacts?: boolean;
@@ -112,7 +112,7 @@ export declare class EnhancedParallelExplorer extends EventEmitter {
     /**
      * Get available MCP servers
      */
-    getAvailableMCPServers(): Promise<import("./mcp-integration/discovery").MCPServerInfo[]>;
+    getAvailableMCPServers(): Promise<import("./mcp-integration/discovery.js").MCPServerInfo[]>;
     /**
      * Quick method for simple parallel exploration
      */

@@ -5,8 +5,8 @@
  * parallel exploration experience with MCP server integration.
  */
 import { EventEmitter } from 'events';
-import { WorkflowOrchestrator } from './workflow/workflow-orchestrator';
-import { MCPServerDiscovery } from './mcp-integration/discovery';
+import { WorkflowOrchestrator } from './workflow/workflow-orchestrator.js';
+import { MCPServerDiscovery } from './mcp-integration/discovery.js';
 /**
  * Main class for enhanced parallel exploration
  */

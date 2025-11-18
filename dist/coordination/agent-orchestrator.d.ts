@@ -5,7 +5,7 @@
  * with MCP server integration and real-time progress tracking.
  */
 import { EventEmitter } from 'events';
-import { MCPServerInfo, TaskRequirement } from '../mcp-integration/discovery';
+import { MCPServerInfo, TaskRequirement } from '../mcp-integration/discovery.js';
 export interface Approach {
     id: string;
     name: string;

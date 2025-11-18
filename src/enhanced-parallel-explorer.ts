@@ -6,9 +6,9 @@
  */
 
 import { EventEmitter } from 'events'
-import { WorkflowOrchestrator, WorkflowConfig, WorkflowResult } from './workflow/workflow-orchestrator'
-import { Approach } from './coordination/agent-orchestrator'
-import { MCPServerDiscovery } from './mcp-integration/discovery'
+import { WorkflowOrchestrator, WorkflowConfig, WorkflowResult } from './workflow/workflow-orchestrator.js'
+import { Approach } from './coordination/agent-orchestrator.js'
+import { MCPServerDiscovery } from './mcp-integration/discovery.js'
 
 export interface ParallelExplorationOptions {
   autoCleanup?: boolean

@@ -1,18 +1,5 @@
 /**
  * Enhanced Workflow Orchestrator
- *
- * Provides end-to-end automation of parallel exploration workflows
- * with intelligent MCP server integration and automatic cleanup.
- */
-
-import { EventEmitter } from 'events'
-import { AgentOrchestrator, AgentSession, Approach } from '../coordination/agent-orchestrator'
-import { MCPServerDiscovery } from '../mcp-integration/discovery'
-
-export interface WorkflowConfig {
-  id: string
-  name: string
-  description: string
   approaches: Approach[]
   mcpServers?: string[] // Preferred MCP servers
   options: WorkflowOptions
