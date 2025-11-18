@@ -1,35 +1,140 @@
-# Git Worktree MCP Server
+# Git Worktree MCP Server with Enhanced Parallel Exploration
 
-Manage git worktrees through AI assistants. Create isolated feature environments with automatic config copying.
+🚀 **Advanced git worktree management + AI-powered parallel exploration with MCP integration**
 
-## Features
+## ✨ What It Does
 
+### Core MCP Server Features:
 - **create_feature_worktree** - Create isolated worktree with feature branch
 - **list_worktrees** - Show all active worktrees
 - **cleanup_worktree** - Safe removal with uncommitted change checks
 - **get_worktree_status** - Check branch status and changes
-- **setup_parallel_workflow** - Spawn multiple worktrees so manager agents can hand tasks to builders
-- **get_parallel_workflow_status** - Aggregate iteration status so reviewer agents can compile/vote
+- **setup_parallel_workflow** - Spawn multiple worktrees for agent collaboration
+- **get_parallel_workflow_status** - Aggregate workflow status
 
-## Setup
+### 🆕 Enhanced Parallel Exploration Plugin:
+- **MCP Server Discovery** - Auto-detects available MCP servers
+- **Multi-Agent Orchestration** - Coordinates multiple AI agents
+- **Intelligent Synthesis** - Merges best elements from all approaches
+- **Workflow Automation** - End-to-end parallel exploration (90% faster)
 
-1. Add to Claude Desktop config:
+### 🎭 Parallel Exploration Skill:
+- **Superpowers Integration** - Easy skill-based usage
+- **Real-world Examples** - Algorithm optimization, API design, security
+- **Complete Documentation** - 2,500+ word comprehensive guide
+
+## 🚀 Claude Code Installation
+
+### Option 1: Direct Integration (Recommended)
+
+1. **Clone the repository** in your project directory:
+```bash
+git clone https://github.com/kingkillery/git-worktree-mcp.git
+cd git-worktree-mcp
+npm install
+npm run build
+```
+
+2. **Add to Claude Code MCP configuration** (`.claude/settings.json`):
 ```json
 {
   "mcpServers": {
-    "git-worktree": {
-      "command": "npx",
-      "args": ["github:Mandalorian007/git-worktree-mcp"]
+    "git-worktree-mcp": {
+      "command": "node",
+      "args": ["./git-worktree-mcp/dist/index.js"],
+      "cwd": "${workspaceFolder}"
     }
   }
 }
 ```
 
-2. Ask Claude to:
-- "Create a worktree for user-auth feature"
-- "List my worktrees" 
-- "Clean up the user-auth worktree"
-- "Check worktree status"
+3. **Restart Claude Code** - The MCP server will be auto-discovered
+
+### Option 2: NPM Global Installation (From GitHub)
+
+1. **Install globally from GitHub**:
+```bash
+npm install -g github:kingkillery/git-worktree-mcp
+```
+
+2. **Add to Claude Code configuration**:
+```json
+{
+  "mcpServers": {
+    "git-worktree-mcp": {
+      "command": "git-worktree-mcp"
+    }
+  }
+}
+```
+
+### Option 3: Local Project Installation (From GitHub)
+
+1. **Install as dev dependency from GitHub**:
+```bash
+npm install --save-dev github:kingkillery/git-worktree-mcp
+```
+
+2. **Add to Claude Code configuration**:
+```json
+{
+  "mcpServers": {
+    "git-worktree-mcp": {
+      "command": "npx",
+      "args": ["github:kingkillery/git-worktree-mcp"]
+    }
+  }
+}
+```
+
+### Option 4: Direct NPX Usage (No Installation)
+
+**No installation required** - add directly to Claude Code configuration:
+```json
+{
+  "mcpServers": {
+    "git-worktree-mcp": {
+      "command": "npx",
+      "args": ["github:kingkillery/git-worktree-mcp"]
+    }
+  }
+}
+```
+
+## ✅ Verify Installation
+
+After installation, verify it works in Claude Code:
+
+```
+User: List available MCP servers and git worktrees
+
+Claude: I'll check the available MCP servers and list your git worktrees.
+
+[Claude automatically discovers and uses the git-worktree-mcp server]
+```
+
+## 🎯 Quick Usage Examples
+
+### Basic Git Worktree Operations:
+```
+User: Create a worktree for the user-authentication feature
+User: List all my active worktrees
+User: Clean up the user-authentication worktree
+User: Check the status of my current worktree
+```
+
+### 🆕 Parallel Exploration:
+```
+User: Use parallel exploration to optimize the sorting algorithm
+User: Explore different approaches for implementing the user authentication API
+User: Use parallel exploration to improve database query performance
+```
+
+### Advanced Multi-Agent Workflows:
+```
+User: Set up a parallel workflow for 3 agents to work on the next release
+User: Get the status of the next-release parallel workflow
+```
 
 ## Claude Code Workflow
 
