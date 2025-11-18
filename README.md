@@ -14,7 +14,7 @@
 
 ### 🆕 Enhanced Parallel Exploration Plugin:
 - **MCP Server Discovery** - Auto-detects available MCP servers
-- **Multi-Agent Orchestration** - Coordinates multiple AI agents
+- **Multi-Agent Orchestration** - Coordinates multiple AI agents (see [agents.md](agents.md))
 - **Intelligent Synthesis** - Merges best elements from all approaches
 - **Workflow Automation** - End-to-end parallel exploration (90% faster)
 
