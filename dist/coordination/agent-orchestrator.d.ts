@@ -34,14 +34,6 @@ export interface AgentConstraints {
     allowedTools: string[];
     forbiddenTools: string[];
 }
-export interface Approach {
-    id: string;
-    name: string;
-    description: string;
-    strategy: string;
-    requirements: TaskRequirement;
-    agentProfile: AgentProfile;
-}
 export interface AgentSession {
     id: string;
     agent: AgentProfile;

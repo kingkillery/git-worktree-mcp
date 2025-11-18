@@ -1,87 +1,85 @@
 /**
  * Enhanced Workflow Orchestrator
-  approaches: Approach[]
-  mcpServers?: string[] // Preferred MCP servers
-  options: WorkflowOptions
+ */
+import { EventEmitter } from 'events';
+import { AgentSession, Approach } from '../coordination/agent-orchestrator.js';
+export interface WorkflowConfig {
+    id: string;
+    name: string;
+    description?: string;
+    approaches: Approach[];
+    mcpServers?: string[];
+    options: WorkflowOptions;
 }
-
 export interface WorkflowOptions {
-  autoCleanup: boolean
-  preserveArtifacts: boolean
-  timeout: number // minutes
-  parallelism: number
-  notifyOnCompletion: boolean
+    autoCleanup: boolean;
+    preserveArtifacts: boolean;
+    timeout: number;
+    parallelism: number;
+    notifyOnCompletion: boolean;
 }
-
 export interface WorkflowPhase {
-  name: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  startTime?: Date
-  endTime?: Date
-  duration?: number
-  result?: any
-  error?: string
+    name: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    startTime?: Date;
+    endTime?: Date;
+    duration?: number;
+    result?: any;
+    error?: string;
 }
-
 export interface WorkflowResult {
-  workflowId: string
-  status: 'running' | 'completed' | 'failed' | 'timeout'
-  phases: Record<string, WorkflowPhase>
-  sessions: AgentSession[]
-  synthesis?: SynthesisResult
-  artifacts: WorkflowArtifact[]
-  metrics: WorkflowMetrics
-  startTime: Date
-  endTime?: Date
-  totalDuration?: number
+    workflowId: string;
+    status: 'running' | 'completed' | 'failed' | 'timeout';
+    phases: Record<string, WorkflowPhase>;
+    sessions: AgentSession[];
+    synthesis?: SynthesisResult;
+    artifacts: WorkflowArtifact[];
+    metrics: WorkflowMetrics;
+    startTime: Date;
+    endTime?: Date;
+    totalDuration?: number;
 }
-
 export interface SynthesisResult {
-  selectedApproach?: string
-  mergedSolution?: any
-  comparison: ApproachComparison[]
-  recommendations: string[]
-  confidence: number
+    selectedApproach?: string;
+    mergedSolution?: any;
+    comparison: ApproachComparison[];
+    recommendations: string[];
+    confidence: number;
 }
-
 export interface ApproachComparison {
-  approachId: string
-  name: string
-  strengths: string[]
-  weaknesses: string[]
-  performance: PerformanceMetrics
-  score: number
+    approachId: string;
+    name: string;
+    strengths: string[];
+    weaknesses: string[];
+    performance: PerformanceMetrics;
+    score: number;
 }
-
 export interface PerformanceMetrics {
-  executionTime: number
-  memoryUsage: number
-  codeQuality: number
-  testCoverage: number
-  maintainability: number
+    executionTime: number;
+    memoryUsage: number;
+    codeQuality: number;
+    testCoverage: number;
+    maintainability: number;
 }
-
 export interface WorkflowArtifact {
-  id: string
-  type: 'code' | 'test' | 'documentation' | 'result' | 'configuration'
-  name: string
-  path?: string
-  content?: any
-  metadata: Record<string, any>
-  sessionId?: string
-  timestamp: Date
+    id: string;
+    type: 'code' | 'test' | 'documentation' | 'result' | 'configuration';
+    name: string;
+    path?: string;
+    content?: any;
+    metadata: Record<string, any>;
+    sessionId?: string;
+    timestamp: Date;
 }
-
 export interface WorkflowMetrics {
-  totalExecutionTime: number
-  sessionsCompleted: number
-  sessionsFailed: number
-  artifactsCreated: number
-  conflictsResolved: number
-  mcpServersUtilized: number
-  parallelismAchieved: number
+    totalExecutionTime: number;
+    sessionsCompleted: number;
+    sessionsFailed: number;
+    artifactsCreated: number;
+    conflictsResolved: number;
+    mcpServersUtilized: number;
+    parallelismAchieved: number;
 }
-
 /**
  * Orchestrates complete parallel exploration workflows
  */

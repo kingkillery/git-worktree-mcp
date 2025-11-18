@@ -1,87 +1,9 @@
 /**
  * Enhanced Workflow Orchestrator
-  approaches: Approach[]
-  mcpServers?: string[] // Preferred MCP servers
-  options: WorkflowOptions
-}
-
-export interface WorkflowOptions {
-  autoCleanup: boolean
-  preserveArtifacts: boolean
-  timeout: number // minutes
-  parallelism: number
-  notifyOnCompletion: boolean
-}
-
-export interface WorkflowPhase {
-  name: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  startTime?: Date
-  endTime?: Date
-  duration?: number
-  result?: any
-  error?: string
-}
-
-export interface WorkflowResult {
-  workflowId: string
-  status: 'running' | 'completed' | 'failed' | 'timeout'
-  phases: Record<string, WorkflowPhase>
-  sessions: AgentSession[]
-  synthesis?: SynthesisResult
-  artifacts: WorkflowArtifact[]
-  metrics: WorkflowMetrics
-  startTime: Date
-  endTime?: Date
-  totalDuration?: number
-}
-
-export interface SynthesisResult {
-  selectedApproach?: string
-  mergedSolution?: any
-  comparison: ApproachComparison[]
-  recommendations: string[]
-  confidence: number
-}
-
-export interface ApproachComparison {
-  approachId: string
-  name: string
-  strengths: string[]
-  weaknesses: string[]
-  performance: PerformanceMetrics
-  score: number
-}
-
-export interface PerformanceMetrics {
-  executionTime: number
-  memoryUsage: number
-  codeQuality: number
-  testCoverage: number
-  maintainability: number
-}
-
-export interface WorkflowArtifact {
-  id: string
-  type: 'code' | 'test' | 'documentation' | 'result' | 'configuration'
-  name: string
-  path?: string
-  content?: any
-  metadata: Record<string, any>
-  sessionId?: string
-  timestamp: Date
-}
-
-export interface WorkflowMetrics {
-  totalExecutionTime: number
-  sessionsCompleted: number
-  sessionsFailed: number
-  artifactsCreated: number
-  conflictsResolved: number
-  mcpServersUtilized: number
-  parallelismAchieved: number
-}
-
+ */
+import { EventEmitter } from 'events';
+import { AgentOrchestrator } from '../coordination/agent-orchestrator.js';
+import { MCPServerDiscovery } from '../mcp-integration/discovery.js';
 /**
  * Orchestrates complete parallel exploration workflows
  */

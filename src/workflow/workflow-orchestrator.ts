@@ -1,5 +1,14 @@
 /**
  * Enhanced Workflow Orchestrator
+ */
+import { EventEmitter } from 'events'
+import { AgentOrchestrator, AgentSession, Approach } from '../coordination/agent-orchestrator.js'
+import { MCPServerDiscovery } from '../mcp-integration/discovery.js'
+
+export interface WorkflowConfig {
+  id: string
+  name: string
+  description?: string
   approaches: Approach[]
   mcpServers?: string[] // Preferred MCP servers
   options: WorkflowOptions
