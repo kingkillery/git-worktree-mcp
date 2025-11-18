@@ -8,6 +8,15 @@
 import { EventEmitter } from 'events'
 import { MCPServerDiscovery, MCPServerInfo, TaskRequirement } from '../mcp-integration/discovery'
 
+export interface Approach {
+  id: string
+  name: string
+  description: string
+  strategy: string
+  requirements: TaskRequirement
+  agentProfile: AgentProfile
+}
+
 export interface AgentProfile {
   id: string
   role: AgentRole

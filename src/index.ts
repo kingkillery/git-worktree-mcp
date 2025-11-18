@@ -11,11 +11,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { GitWorktreeManager } from "./worktree-manager.js";
 import { ParManager } from "./par-manager.js";
 import { ToolDefinition } from "./tools.js";
+import { EnhancedParallelExplorer } from "./enhanced-parallel-explorer.js";
 
 const server = new Server(
   {
     name: "git-worktree-mcp",
-    version: "1.0.0",
+    version: "2.0.0-enhanced",
   },
   {
     capabilities: {
@@ -26,6 +27,7 @@ const server = new Server(
 
 const worktreeManager = new GitWorktreeManager();
 const parManager = new ParManager();
+const parallelExplorer = new EnhancedParallelExplorer();
 
 const featureNameSchema = () => z.string()
   .min(1, "Feature name cannot be empty")
@@ -283,6 +285,120 @@ const parTestConnectionTool = {
   }
 } satisfies ToolDefinition & { handler: Function };
 
+// Enhanced Parallel Exploration Tools
+const parallelExplorationTool = {
+  name: "parallel_exploration",
+  description: "Execute parallel exploration of multiple solution approaches with AI agents and MCP integration",
+  inputSchema: z.object({
+    taskName: z.string()
+      .min(1, "Task name cannot be empty")
+      .describe("Identifier for the exploration task"),
+    taskDescription: z.string()
+      .min(10, "Task description must be at least 10 characters")
+      .describe("Detailed description of the task to explore"),
+    numApproaches: z.number()
+      .int()
+      .min(2, "At least 2 approaches required")
+      .max(5, "Maximum 5 approaches to avoid complexity")
+      .optional()
+      .default(3)
+      .describe("Number of approaches to explore (default: 3)"),
+    timeout: z.number()
+      .int()
+      .min(5, "Minimum 5 minutes timeout")
+      .max(120, "Maximum 120 minutes timeout")
+      .optional()
+      .default(60)
+      .describe("Timeout in minutes (default: 60)"),
+    preserveArtifacts: z.boolean()
+      .optional()
+      .default(false)
+      .describe("Preserve all artifacts after completion (default: false)"),
+    autoCleanup: z.boolean()
+      .optional()
+      .default(true)
+      .describe("Automatically clean up worktrees after completion (default: true)")
+  }),
+  handler: async (args: {
+    taskName: string;
+    taskDescription: string;
+    numApproaches?: number;
+    timeout?: number;
+    preserveArtifacts?: boolean;
+    autoCleanup?: boolean;
+  }) => {
+    try {
+      const result = await parallelExplorer.executeParallelExploration(
+        args.taskName,
+        args.taskDescription,
+        args.numApproaches || 3,
+        {
+          timeout: args.timeout,
+          preserveArtifacts: args.preserveArtifacts,
+          autoCleanup: args.autoCleanup
+        }
+      );
+
+      return {
+        success: true,
+        workflowId: result.workflowId,
+        status: result.status,
+        totalDuration: result.totalDuration,
+        sessionsCompleted: result.metrics.sessionsCompleted,
+        sessionsFailed: result.metrics.sessionsFailed,
+        artifactsCreated: result.artifacts.length,
+        synthesis: result.synthesis ? {
+          selectedApproach: result.synthesis.selectedApproach,
+          confidence: result.synthesis.confidence,
+          recommendations: result.synthesis.recommendations.slice(0, 3) // Top 3 recommendations
+        } : null,
+        message: `Parallel exploration completed with ${result.metrics.sessionsCompleted} successful approaches`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        message: 'Parallel exploration failed'
+      };
+    }
+  }
+} satisfies ToolDefinition & { handler: Function };
+
+const mcpDiscoveryTool = {
+  name: "mcp_discovery",
+  description: "Discover available MCP servers and their capabilities in the current environment",
+  inputSchema: z.object({}),
+  handler: async () => {
+    try {
+      const servers = await parallelExplorer.getAvailableMCPServers();
+      return {
+        success: true,
+        serversFound: servers.length,
+        servers: servers.map(server => ({
+          name: server.name,
+          version: server.version,
+          available: server.available,
+          categories: server.capabilities.categories.map(cat => ({
+            name: cat.name,
+            toolsCount: cat.tools.length
+          })),
+          performance: {
+            responseTime: server.capabilities.performance.responseTime,
+            reliability: server.capabilities.performance.reliability
+          }
+        })),
+        message: `Discovered ${servers.length} MCP servers`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Discovery failed',
+        message: 'Failed to discover MCP servers'
+      };
+    }
+  }
+} satisfies ToolDefinition & { handler: Function };
+
 const tools = [
   // Original Git Worktree Tools
   createFeatureWorktreeTool,
@@ -303,6 +419,9 @@ const tools = [
   parStartWorkspaceTool,
   parListWorkspacesTool,
   parRemoveWorkspaceTool,
+  // Enhanced Parallel Exploration Tools
+  parallelExplorationTool,
+  mcpDiscoveryTool,
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {

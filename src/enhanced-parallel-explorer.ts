@@ -6,8 +6,9 @@
  */
 
 import { EventEmitter } from 'events'
-import { WorkflowOrchestrator, WorkflowConfig, WorkflowResult, Approach } from './workflow/workflow-orchestrator'
-import { MCPServerDiscovery, TaskRequirement } from './mcp-integration/discovery'
+import { WorkflowOrchestrator, WorkflowConfig, WorkflowResult } from './workflow/workflow-orchestrator'
+import { Approach } from './coordination/agent-orchestrator'
+import { MCPServerDiscovery } from './mcp-integration/discovery'
 
 export interface ParallelExplorationOptions {
   autoCleanup?: boolean

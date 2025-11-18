@@ -53,6 +53,13 @@
   },
   "files": [
     "dist/**/*",
-    "README.md"
+    "src/**/*",
+    "skills/**/*",
+    "README.md",
+    "INSTALLATION_VERIFICATION.md",
+    "REPO_STRUCTURE.md",
+    "DEPLOYMENT_GUIDE.md",
+    "PARALLEL_EXPLORATION_PLUGIN_IMPROVEMENTS.md",
+    "PLUGIN_IMPLEMENTATION_PLAN.md"
   ]
 }

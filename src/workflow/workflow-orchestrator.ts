@@ -7,7 +7,7 @@
 
 import { EventEmitter } from 'events'
 import { AgentOrchestrator, AgentSession, Approach } from '../coordination/agent-orchestrator'
-import { MCPServerDiscovery, MCPServerInfo } from '../mcp-integration/discovery'
+import { MCPServerDiscovery } from '../mcp-integration/discovery'
 
 export interface WorkflowConfig {
   id: string

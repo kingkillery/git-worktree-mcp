@@ -6,7 +6,10 @@
       "Bash(npx tsc:*)",
       "Bash(node:*)",
       "Bash(npx ts-node:*)",
-      "mcp__git-worktree__list_worktrees"
+      "mcp__git-worktree__list_worktrees",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx github:kingkillery/git-worktree-mcp --help:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

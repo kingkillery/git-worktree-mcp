@@ -5,7 +5,7 @@
  * with available MCP servers in the environment.
  */
 
-import { spawn, exec } from 'child_process'
+import { exec } from 'child_process'
 import { promisify } from 'util'
 
 const execAsync = promisify(exec)
@@ -129,13 +129,15 @@ export class MCPServerDiscovery {
     if (envServers) {
       const serverNames = envServers.split(',').map(s => s.trim())
       for (const name of serverNames) {
-        servers.push({
-          name,
-          version: 'unknown',
-          capabilities: { tools: [], resources: [], categories: [], performance: { responseTime: 0, reliability: 0, throughput: 0 } },
-          available: false,
-          lastChecked: new Date()
-        })
+        if (name.trim()) {
+          servers.push({
+            name,
+            version: 'unknown',
+            capabilities: { tools: [], resources: [], categories: [], performance: { responseTime: 0, reliability: 0, throughput: 0 } },
+            available: false,
+            lastChecked: new Date()
+          })
+        }
       }
     }
 
