@@ -1,5 +1,5 @@
 import { execSync } from "child_process";
-import { existsSync, statSync, readdirSync, copyFileSync, mkdirSync } from "fs";
+import { existsSync, statSync, readdirSync, copyFileSync, mkdirSync, writeFileSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 
 export interface WorktreeResult {
@@ -34,6 +34,60 @@ export interface WorktreeStatus {
   untrackedFiles?: string[];
 }
 
+export interface WorkflowIterationSummary extends WorktreeResult {
+  featureName: string;
+  label: string;
+  instructions?: string;
+}
+
+export interface ParallelWorkflowSetupResult {
+  success: boolean;
+  workflowName: string;
+  message: string;
+  iterations: WorkflowIterationSummary[];
+  metadataPath: string;
+  summary: {
+    successes: number;
+    failures: number;
+  };
+}
+
+export interface WorkflowIterationStatus extends WorktreeStatus {
+  featureName: string;
+  label: string;
+  instructions?: string;
+}
+
+export interface ParallelWorkflowStatusResult {
+  success: boolean;
+  workflowName: string;
+  metadataPath?: string;
+  iterations: WorkflowIterationStatus[];
+  readyCount: number;
+  dirtyCount: number;
+  missingCount: number;
+  recommendations?: string[];
+}
+
+export interface ParallelWorkflowOptions {
+  iterationCount?: number;
+  agentLabels?: string[];
+}
+
+interface WorkflowIterationMetadata {
+  featureName: string;
+  label: string;
+  branch?: string;
+  path?: string;
+  success?: boolean;
+}
+
+interface WorkflowMetadata {
+  workflowName: string;
+  createdAt: string;
+  iterations: WorkflowIterationMetadata[];
+}
+
 export class GitWorktreeManager {
   private readonly CONFIG_FILES = [
     ".env",
@@ -47,6 +101,8 @@ export class GitWorktreeManager {
     ".claude",
     ".vscode",
   ];
+
+  private readonly WORKFLOW_STATE_DIR = ".worktree/workflows";
 
   private isInGitRepo(): boolean {
     try {
@@ -63,6 +119,71 @@ export class GitWorktreeManager {
     } catch (error) {
       throw new Error("Not in a git repository");
     }
+  }
+
+  private getWorkflowMetadataDirectory(repoRoot: string): string {
+    return join(repoRoot, this.WORKFLOW_STATE_DIR);
+  }
+
+  private ensureWorkflowMetadataDirectory(repoRoot: string): string {
+    const workflowDir = this.getWorkflowMetadataDirectory(repoRoot);
+    if (!existsSync(workflowDir)) {
+      mkdirSync(workflowDir, { recursive: true });
+    }
+    return workflowDir;
+  }
+
+  private getWorkflowMetadataPath(repoRoot: string, workflowName: string): string {
+    return join(this.getWorkflowMetadataDirectory(repoRoot), `${workflowName}.json`);
+  }
+
+  private readWorkflowMetadata(repoRoot: string, workflowName: string): WorkflowMetadata | null {
+    const metadataPath = this.getWorkflowMetadataPath(repoRoot, workflowName);
+    if (!existsSync(metadataPath)) {
+      return null;
+    }
+
+    try {
+      const contents = readFileSync(metadataPath, { encoding: "utf-8" });
+      return JSON.parse(contents) as WorkflowMetadata;
+    } catch (error) {
+      console.error(`Failed to read workflow metadata for ${workflowName}: ${error}`);
+      return null;
+    }
+  }
+
+  private writeWorkflowMetadata(repoRoot: string, workflowName: string, metadata: WorkflowMetadata): string {
+    const workflowDir = this.ensureWorkflowMetadataDirectory(repoRoot);
+    const metadataPath = join(workflowDir, `${workflowName}.json`);
+    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), { encoding: "utf-8" });
+    return metadataPath;
+  }
+
+  private formatWorktreeHint(worktreePath: string): string {
+    return `cd ${worktreePath} && export $(cat .env | xargs) && claude`;
+  }
+
+  private deriveFilesystemWorkflow(repoRoot: string, workflowName: string): WorkflowIterationMetadata[] {
+    const worktreeRoot = join(repoRoot, ".worktree");
+    if (!existsSync(worktreeRoot)) {
+      return [];
+    }
+
+    const entries = readdirSync(worktreeRoot, { withFileTypes: true });
+    const prefix = `${workflowName}-`;
+
+    return entries
+      .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
+      .map((entry) => {
+        const featureName = entry.name;
+        return {
+          featureName,
+          label: featureName.substring(prefix.length) || entry.name,
+          branch: `feature/${featureName}`,
+          path: join(worktreeRoot, entry.name),
+          success: true,
+        };
+      });
   }
 
 
@@ -115,6 +236,109 @@ export class GitWorktreeManager {
       } else {
         copyFileSync(sourcePath, targetPath);
       }
+    }
+  }
+
+  async setupParallelWorkflow(workflowName: string, options: ParallelWorkflowOptions): Promise<ParallelWorkflowSetupResult> {
+    try {
+      if (!this.isInGitRepo()) {
+        return {
+          success: false,
+          workflowName,
+          message: "Not in a git repository",
+          iterations: [],
+          metadataPath: "",
+          summary: { successes: 0, failures: 0 },
+        };
+      }
+
+      const repoRoot = this.getRepoRoot();
+      this.ensureWorkflowMetadataDirectory(repoRoot);
+
+      const metadataPath = this.getWorkflowMetadataPath(repoRoot, workflowName);
+      if (existsSync(metadataPath)) {
+        return {
+          success: false,
+          workflowName,
+          message: `Workflow '${workflowName}' already exists. Clean it up or choose a new name.`,
+          iterations: [],
+          metadataPath,
+          summary: { successes: 0, failures: 0 },
+        };
+      }
+
+      const iterationTotal = options.agentLabels?.length
+        ? options.agentLabels.length
+        : options.iterationCount ?? 2;
+
+      const labels = options.agentLabels?.length
+        ? options.agentLabels
+        : Array.from({ length: iterationTotal }, (_, idx) => `iteration-${idx + 1}`);
+
+      if (labels.length === 0) {
+        return {
+          success: false,
+          workflowName,
+          message: "No iterations requested. Provide an iteration count or agent labels.",
+          iterations: [],
+          metadataPath,
+          summary: { successes: 0, failures: 0 },
+        };
+      }
+
+      const iterations: WorkflowIterationSummary[] = [];
+
+      for (const label of labels) {
+        const featureName = `${workflowName}-${label}`;
+        const result = await this.createFeatureWorktree(featureName);
+        iterations.push({
+          ...result,
+          featureName,
+          label,
+          instructions: result.success && result.path
+            ? this.formatWorktreeHint(result.path)
+            : undefined,
+        });
+      }
+
+      const metadata: WorkflowMetadata = {
+        workflowName,
+        createdAt: new Date().toISOString(),
+        iterations: iterations.map((iteration) => ({
+          featureName: iteration.featureName,
+          label: iteration.label,
+          branch: iteration.branch,
+          path: iteration.path,
+          success: iteration.success,
+        })),
+      };
+
+      const savedMetadataPath = this.writeWorkflowMetadata(repoRoot, workflowName, metadata);
+
+      const successes = iterations.filter((iteration) => iteration.success).length;
+      const failures = iterations.length - successes;
+
+      return {
+        success: failures === 0,
+        workflowName,
+        message: `Prepared ${iterations.length} parallel iteration(s) for workflow '${workflowName}'`,
+        iterations,
+        metadataPath: savedMetadataPath,
+        summary: {
+          successes,
+          failures,
+        },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        workflowName,
+        message: `Failed to set up workflow '${workflowName}': ${errorMessage}`,
+        iterations: [],
+        metadataPath: "",
+        summary: { successes: 0, failures: 0 },
+      };
     }
   }
 
@@ -373,6 +597,109 @@ export class GitWorktreeManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to get worktree status: ${errorMessage}`);
+    }
+  }
+
+  async getParallelWorkflowStatus(workflowName: string): Promise<ParallelWorkflowStatusResult> {
+    try {
+      if (!this.isInGitRepo()) {
+        return {
+          success: false,
+          workflowName,
+          iterations: [],
+          readyCount: 0,
+          dirtyCount: 0,
+          missingCount: 0,
+          recommendations: ["Not in a git repository"],
+        };
+      }
+
+      const repoRoot = this.getRepoRoot();
+      const metadata = this.readWorkflowMetadata(repoRoot, workflowName);
+      const metadataPath = metadata ? this.getWorkflowMetadataPath(repoRoot, workflowName) : undefined;
+
+      const iterationDefinitions = metadata?.iterations?.length
+        ? metadata.iterations
+        : this.deriveFilesystemWorkflow(repoRoot, workflowName);
+
+      if (iterationDefinitions.length === 0) {
+        return {
+          success: false,
+          workflowName,
+          metadataPath,
+          iterations: [],
+          readyCount: 0,
+          dirtyCount: 0,
+          missingCount: 0,
+          recommendations: [`No worktrees found for workflow '${workflowName}'. Run setup_parallel_workflow first.`],
+        };
+      }
+
+      const iterations: WorkflowIterationStatus[] = [];
+      let readyCount = 0;
+      let dirtyCount = 0;
+      let missingCount = 0;
+
+      for (const iteration of iterationDefinitions) {
+        const featureName = iteration.featureName;
+        const label = iteration.label ?? featureName;
+        const status = await this.getWorktreeStatus(featureName);
+
+        const iterationStatus: WorkflowIterationStatus = {
+          ...status,
+          featureName,
+          label,
+          branch: status.branch ?? iteration.branch ?? `feature/${featureName}`,
+          path: status.path ?? iteration.path,
+          instructions: status.exists && (status.path ?? iteration.path)
+            ? this.formatWorktreeHint(status.path ?? iteration.path!)
+            : undefined,
+        };
+
+        if (!status.exists) {
+          missingCount++;
+        } else if (status.hasUncommittedChanges) {
+          dirtyCount++;
+        } else {
+          readyCount++;
+        }
+
+        iterations.push(iterationStatus);
+      }
+
+      const recommendations: string[] = [];
+      if (missingCount > 0) {
+        recommendations.push(`Detected ${missingCount} missing iteration(s). Re-run setup_parallel_workflow or recreate the missing branches.`);
+      }
+      if (dirtyCount > 0) {
+        recommendations.push(`There are ${dirtyCount} iteration(s) with pending changes. Review git status before compiling or voting.`);
+      }
+
+      if (recommendations.length === 0) {
+        recommendations.push("All iterations look ready. Review commits and decide on the winning branch.");
+      }
+
+      return {
+        success: true,
+        workflowName,
+        metadataPath,
+        iterations,
+        readyCount,
+        dirtyCount,
+        missingCount,
+        recommendations,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
+        workflowName,
+        iterations: [],
+        readyCount: 0,
+        dirtyCount: 0,
+        missingCount: 0,
+        recommendations: [`Failed to gather workflow status: ${errorMessage}`],
+      };
     }
   }
 }

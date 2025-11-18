@@ -1,7 +1,7 @@
 {
   "name": "git-worktree-mcp",
   "version": "1.0.0",
-  "description": "MCP server for managing git worktrees through AI assistants",
+  "description": "MCP server for managing git worktrees and Par parallel development sessions through AI assistants",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -27,9 +27,13 @@
     "mcp",
     "git",
     "worktree",
+    "par",
+    "tmux",
+    "parallel",
     "ai",
     "assistant",
-    "development"
+    "development",
+    "wsl"
   ],
   "author": "Your Name",
   "license": "MIT",

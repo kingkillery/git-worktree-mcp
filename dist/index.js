@@ -5,6 +5,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextpro
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { GitWorktreeManager } from "./worktree-manager.js";
+import { ParManager } from "./par-manager.js";
 const server = new Server({
     name: "git-worktree-mcp",
     version: "1.0.0",
@@ -14,14 +15,16 @@ const server = new Server({
     },
 });
 const worktreeManager = new GitWorktreeManager();
+const parManager = new ParManager();
+const featureNameSchema = () => z.string()
+    .min(1, "Feature name cannot be empty")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Feature name can only contain letters, numbers, hyphens, and underscores")
+    .refine(name => !name.startsWith("-") && !name.endsWith("-"), "Feature name cannot start or end with a hyphen");
 const createFeatureWorktreeTool = {
     name: "create_feature_worktree",
     description: "Create a new git worktree for feature development with automatic config file copying",
     inputSchema: z.object({
-        featureName: z.string()
-            .min(1, "Feature name cannot be empty")
-            .regex(/^[a-zA-Z0-9_-]+$/, "Feature name can only contain letters, numbers, hyphens, and underscores")
-            .refine(name => !name.startsWith("-") && !name.endsWith("-"), "Feature name cannot start or end with a hyphen")
+        featureName: featureNameSchema()
             .describe("Name of the feature branch and worktree"),
     }),
     handler: async (args) => {
@@ -47,10 +50,7 @@ const cleanupWorktreeTool = {
     name: "cleanup_worktree",
     description: "Safely remove a git worktree after checking for uncommitted changes",
     inputSchema: z.object({
-        featureName: z.string()
-            .min(1, "Feature name cannot be empty")
-            .regex(/^[a-zA-Z0-9_-]+$/, "Feature name can only contain letters, numbers, hyphens, and underscores")
-            .refine(name => !name.startsWith("-") && !name.endsWith("-"), "Feature name cannot start or end with a hyphen")
+        featureName: featureNameSchema()
             .describe("Name of the feature worktree to cleanup"),
     }),
     handler: async (args) => {
@@ -61,17 +61,221 @@ const getWorktreeStatusTool = {
     name: "get_worktree_status",
     description: "Get the status of a specific git worktree including branch info and changes",
     inputSchema: z.object({
-        featureName: z.string()
-            .min(1, "Feature name cannot be empty")
-            .regex(/^[a-zA-Z0-9_-]+$/, "Feature name can only contain letters, numbers, hyphens, and underscores")
-            .refine(name => !name.startsWith("-") && !name.endsWith("-"), "Feature name cannot start or end with a hyphen")
+        featureName: featureNameSchema()
             .describe("Name of the feature worktree to check status"),
     }),
     handler: async (args) => {
         return await worktreeManager.getWorktreeStatus(args.featureName);
     }
 };
-const tools = [createFeatureWorktreeTool, listWorktreesTool, cleanupWorktreeTool, getWorktreeStatusTool];
+const setupParallelWorkflowTool = {
+    name: "setup_parallel_workflow",
+    description: "Create multiple git worktrees so manager and worker agents can explore iterations in parallel",
+    inputSchema: z.object({
+        workflowName: featureNameSchema()
+            .describe("Logical workflow name. Each iteration will be suffixed with this name."),
+        iterationCount: z.number()
+            .int()
+            .min(2, "Use at least two iterations for a parallel workflow")
+            .max(10, "Limit iterations to 10 to avoid git overload")
+            .optional()
+            .describe("Number of parallel worktrees to create when agent labels are not specified"),
+        agentLabels: z.array(featureNameSchema()
+            .describe("A label for each agent/iteration (letters, numbers, hyphen/underscore only)"))
+            .min(2, "Provide at least two agent labels for a parallel workflow")
+            .max(10, "Limit agent labels to 10 to avoid git overload")
+            .optional()
+            .describe("Optional explicit labels for each agent iteration"),
+    }),
+    handler: async (args) => {
+        return await worktreeManager.setupParallelWorkflow(args.workflowName, {
+            iterationCount: args.iterationCount,
+            agentLabels: args.agentLabels,
+        });
+    }
+};
+const getParallelWorkflowStatusTool = {
+    name: "get_parallel_workflow_status",
+    description: "Gather status for every worktree tied to a workflow so reviewer agents can compile results and vote",
+    inputSchema: z.object({
+        workflowName: featureNameSchema()
+            .describe("Workflow name captured when the iterations were created"),
+    }),
+    handler: async (args) => {
+        return await worktreeManager.getParallelWorkflowStatus(args.workflowName);
+    }
+};
+// Par CLI Tools
+const parStartSessionTool = {
+    name: "par_start_session",
+    description: "Start a new Par session with a git worktree and tmux session. Requires tmux (works via WSL on Windows).",
+    inputSchema: z.object({
+        label: z.string()
+            .min(1, "Label cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "Label can only contain letters, numbers, hyphens, and underscores")
+            .describe("Globally unique label for the session"),
+        branch: z.string().optional().describe("Optional branch name to checkout instead of creating new branch"),
+        checkout: z.boolean().optional().describe("Use checkout mode for existing branches/PRs instead of creating new branch"),
+    }),
+    handler: async (args) => {
+        if (args.checkout && args.branch) {
+            return await parManager.checkoutSession(args.label, args.branch);
+        }
+        else {
+            return await parManager.startSession(args.label, {
+                branch: args.branch,
+                checkout: args.checkout
+            });
+        }
+    }
+};
+const parListSessionsTool = {
+    name: "par_list_sessions",
+    description: "List all active Par sessions globally across repositories",
+    inputSchema: z.object({}),
+    handler: async () => {
+        return await parManager.listSessions();
+    }
+};
+const parSendCommandTool = {
+    name: "par_send_command",
+    description: "Send a command to a specific Par session or all sessions. Command will be executed in the tmux session.",
+    inputSchema: z.object({
+        target: z.string()
+            .describe("Target session label or 'all' to send to all sessions"),
+        command: z.string()
+            .min(1, "Command cannot be empty")
+            .describe("Command to send to the session(s)"),
+    }),
+    handler: async (args) => {
+        if (args.target.toLowerCase() === "all") {
+            return await parManager.sendToAllSessions(args.command);
+        }
+        else {
+            return await parManager.sendCommand(args.target, args.command);
+        }
+    }
+};
+const parOpenSessionTool = {
+    name: "par_open_session",
+    description: "Open/attach to a specific Par tmux session",
+    inputSchema: z.object({
+        label: z.string()
+            .min(1, "Label cannot be empty")
+            .describe("Label of the session to open"),
+    }),
+    handler: async (args) => {
+        return await parManager.openSession(args.label);
+    }
+};
+const parRemoveSessionTool = {
+    name: "par_remove_session",
+    description: "Remove a Par session (kills tmux session, removes worktree, deletes branch)",
+    inputSchema: z.object({
+        label: z.string()
+            .min(1, "Label cannot be empty")
+            .describe("Label of the session to remove"),
+        removeAll: z.boolean().optional().describe("Set to true to remove all sessions instead of specific label"),
+    }),
+    handler: async (args) => {
+        if (args.removeAll) {
+            return await parManager.removeAllSessions();
+        }
+        else {
+            return await parManager.removeSession(args.label);
+        }
+    }
+};
+const parGetSessionStatusTool = {
+    name: "par_get_session_status",
+    description: "Get the status of a specific Par session including worktree and tmux information",
+    inputSchema: z.object({
+        label: z.string()
+            .min(1, "Label cannot be empty")
+            .describe("Label of the session to check"),
+    }),
+    handler: async (args) => {
+        return await parManager.getSessionStatus(args.label);
+    }
+};
+const parCreateControlCenterTool = {
+    name: "par_create_control_center",
+    description: "Create a control center tmux session with separate windows for each Par session",
+    inputSchema: z.object({}),
+    handler: async () => {
+        return await parManager.createControlCenter();
+    }
+};
+const parStartWorkspaceTool = {
+    name: "par_start_workspace",
+    description: "Start a multi-repository Par workspace with multiple repos managed together",
+    inputSchema: z.object({
+        name: z.string()
+            .min(1, "Workspace name cannot be empty")
+            .regex(/^[a-zA-Z0-9_-]+$/, "Workspace name can only contain letters, numbers, hyphens, and underscores")
+            .describe("Name for the workspace"),
+        repos: z.array(z.string())
+            .min(1, "At least one repository is required")
+            .describe("Array of repository names/paths to include in the workspace"),
+    }),
+    handler: async (args) => {
+        return await parManager.startWorkspace(args.name, args.repos);
+    }
+};
+const parListWorkspacesTool = {
+    name: "par_list_workspaces",
+    description: "List all active Par workspaces",
+    inputSchema: z.object({}),
+    handler: async () => {
+        return await parManager.listWorkspaces();
+    }
+};
+const parRemoveWorkspaceTool = {
+    name: "par_remove_workspace",
+    description: "Remove a Par workspace and all its associated sessions",
+    inputSchema: z.object({
+        name: z.string()
+            .min(1, "Workspace name cannot be empty")
+            .describe("Name of the workspace to remove"),
+    }),
+    handler: async (args) => {
+        return await parManager.removeWorkspace(args.name);
+    }
+};
+const parTestConnectionTool = {
+    name: "par_test_connection",
+    description: "Test the connection to Par CLI and verify installation",
+    inputSchema: z.object({}),
+    handler: async () => {
+        const result = await parManager.testConnection();
+        return {
+            ...result,
+            wslEnabled: parManager.isWSLEnabled(),
+            platform: process.platform
+        };
+    }
+};
+const tools = [
+    // Original Git Worktree Tools
+    createFeatureWorktreeTool,
+    listWorktreesTool,
+    cleanupWorktreeTool,
+    getWorktreeStatusTool,
+    setupParallelWorkflowTool,
+    getParallelWorkflowStatusTool,
+    // Par CLI Tools
+    parTestConnectionTool,
+    parStartSessionTool,
+    parListSessionsTool,
+    parSendCommandTool,
+    parOpenSessionTool,
+    parRemoveSessionTool,
+    parGetSessionStatusTool,
+    parCreateControlCenterTool,
+    parStartWorkspaceTool,
+    parListWorkspacesTool,
+    parRemoveWorkspaceTool,
+];
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: tools.map(({ name, description, inputSchema }) => ({

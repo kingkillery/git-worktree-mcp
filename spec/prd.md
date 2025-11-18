@@ -16,6 +16,8 @@ Work on multiple features simultaneously without context switching or environmen
 - `list_worktrees()` - Show all active worktrees
 - `cleanup_worktree(feature_name)` - Safe removal with conflict checks
 - `get_worktree_status(feature_name)` - Check branch status and changes
+- `setup_parallel_workflow(workflow_name, iteration_count | agent_labels)` - Spawn multiple feature environments for multi-agent exploration
+- `get_parallel_workflow_status(workflow_name)` - Summarize every iteration so reviewer agents can compile/vote
 
 ### Smart Setup
 - Auto-copy config files (`.env*`, `.mcp.json`, `.claude/`)

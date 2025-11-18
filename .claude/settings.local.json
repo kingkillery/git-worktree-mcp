@@ -1,0 +1,17 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "git-worktree",
+    "playwright",
+    "perplexity-ask",
+    "firecrawl-mcp",
+    "youtube-data",
+    "reddit",
+    "gitbutler"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(but.exe:*)"
+    ]
+  }
+}

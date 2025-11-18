@@ -1,8 +1,9 @@
 {
   "mcpServers": {
     "git-worktree": {
-      "command": "npx",
-      "args": ["github:Mandalorian007/git-worktree-mcp"]
+      "command": "node",
+      "args": ["./dist/index.js"],
+      "cwd": "C:\\Users\\prest\\Desktop\\Desktop_Projects\\May-Dec-2025\\MCP-Servers\\git-worktree\\git-worktree-mcp"
     },
     "playwright": {
       "command": "npx",
@@ -37,6 +38,11 @@
     "reddit": {
       "command": "uvx",
       "args": ["--from", "git+https://github.com/adhikasp/mcp-reddit.git", "mcp-reddit"],
+      "env": {}
+    },
+    "gitbutler": {
+      "command": "but.exe",
+      "args": ["mcp"],
       "env": {}
     }
   }
