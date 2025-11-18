@@ -9,7 +9,11 @@
       "mcp__git-worktree__list_worktrees",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npx github:kingkillery/git-worktree-mcp --help:*)"
+      "Bash(npx github:kingkillery/git-worktree-mcp --help:*)",
+      "Bash(where npm)",
+      "Bash(where:*)",
+      "Bash(where npx)",
+      "Bash(npx:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
